@@ -63,10 +63,10 @@
   "devDependencies": {
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "glob": "^10.3.10",
     "prettier": "^3.4.2",
     "prisma": "^5.10.2",
-    "rimraf": "^5.0.5",
-    "glob": "^10.3.10"
+    "rimraf": "^5.0.5"
   },
   "engines": {
     "node": ">=18.13.0"

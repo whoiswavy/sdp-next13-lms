@@ -1,16 +1,17 @@
-import { db } from '@/lib/db';
-import { auth } from '@clerk/nextjs';
-import { NextResponse } from 'next/server';
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+import { db } from "@/lib/db";
 
 export async function PATCH(
   req: Request,
   { params }: { params: { courseId: string; chapterId: string } }
 ) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
 
     if (!userId) {
-      return new NextResponse('Unauthorized User', { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const ownCourse = await db.course.findUnique({
@@ -21,11 +22,8 @@ export async function PATCH(
     });
 
     if (!ownCourse) {
-      return new NextResponse('Unauthorized User', { status: 401 });
+      return new NextResponse("Unauthorized", { status: 401 });
     }
-
-    // for publishing the chapter we need to check for the criterias it need to fullfill ,
-    // like- it should have(chapter.Title,chapter.videoUrl,mux data,chapter.des)
 
     const chapter = await db.chapter.findUnique({
       where: {
@@ -34,28 +32,35 @@ export async function PATCH(
       },
     });
 
+    const muxData = await db.muxData.findUnique({
+      where: {
+        chapterId: params.chapterId,
+      },
+    });
 
     if (
       !chapter ||
+      !muxData ||
       !chapter.title ||
       !chapter.description ||
-      !chapter.videoUrl 
+      !chapter.videoUrl
     ) {
-      return new NextResponse('Missing chapter criterias', { status: 400 });
+      return new NextResponse("Missing required fields", { status: 400 });
     }
 
-    const chapterPublished = await db.chapter.update({
+    const publishedChapter = await db.chapter.update({
       where: {
         id: params.chapterId,
+        courseId: params.courseId,
       },
       data: {
         isPublished: true,
       },
     });
 
-    return NextResponse.json(chapterPublished);
+    return NextResponse.json(publishedChapter);
   } catch (error) {
-    console.log('[CHAPTER PUBLISH]', error);
-    return new NextResponse('Internal Error', { status: 500 });
+    console.log("[CHAPTER_PUBLISH]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
