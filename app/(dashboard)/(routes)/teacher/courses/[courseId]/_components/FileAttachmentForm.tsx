@@ -106,7 +106,7 @@ export const FileAttachmentForm = ({
       {isEditing && (
         <div>
           <FileUpload
-            endpoint="courseAttachments" /// these endpoints are made fixed in backened under api/uploadthing/core.ts
+            endpoint="courseAttachment" /// these endpoints are made fixed in backened under api/uploadthing/core.ts
             onChange={(url) => {
               if (url) {
                 onSubmit({ url: url });
