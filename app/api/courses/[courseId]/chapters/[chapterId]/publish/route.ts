@@ -1,66 +1,54 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
-
 import { db } from "@/lib/db";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { courseId: string; chapterId: string } }
+  { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = auth();
 
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const ownCourse = await db.course.findUnique({
+    // Verify the user owns this course
+    const course = await db.course.findUnique({
       where: {
         id: params.courseId,
-        userId,
-      },
+        userId: userId
+      }
     });
 
-    if (!ownCourse) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!course) {
+      return new NextResponse("Not found", { status: 404 });
     }
 
-    const chapter = await db.chapter.findUnique({
+    const publishedCourse = await db.course.update({
       where: {
-        id: params.chapterId,
-        courseId: params.courseId,
-      },
-    });
-
-    const muxData = await db.muxData.findUnique({
-      where: {
-        chapterId: params.chapterId,
-      },
-    });
-
-    if (
-      !chapter ||
-      !muxData ||
-      !chapter.title ||
-      !chapter.description ||
-      !chapter.videoUrl
-    ) {
-      return new NextResponse("Missing required fields", { status: 400 });
-    }
-
-    const publishedChapter = await db.chapter.update({
-      where: {
-        id: params.chapterId,
-        courseId: params.courseId,
+        id: params.courseId,
+        userId: userId
       },
       data: {
-        isPublished: true,
-      },
+        isPublished: true
+      }
     });
-
-    return NextResponse.json(publishedChapter);
+    const publishCourseChapters = await db.chapter.updateMany({
+      where: {
+        courseId: params.courseId
+      },
+      data: {
+        isPublished: true
+      }
+    })
+    return NextResponse.json({
+      ...publishedCourse,
+      chapters: publishCourseChapters
+    });
   } catch (error) {
-    console.log("[CHAPTER_PUBLISH]", error);
+    console.log("[COURSE_PUBLISH]", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+

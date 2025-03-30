@@ -1,9 +1,12 @@
-import { db } from '@/lib/db';
-import { auth } from '@clerk/nextjs';
-import { Course, Chapter, UserProgress } from '@prisma/client';
-import { redirect } from 'next/navigation';
-import React from 'react';
-import CourseSidebarItem from './CourseSidebarItem';
+import { auth } from "@clerk/nextjs/server";;
+import { Chapter, Course, UserProgress } from "@prisma/client"
+import { redirect } from "next/navigation";
+
+import { db } from "@/lib/db";
+import { CourseProgress } from "@/components/course-progress";
+
+import { CourseSidebarItem } from "./CourseSidebarItem";
+
 interface CourseSidebarProps {
   course: Course & {
     chapters: (Chapter & {
@@ -13,11 +16,14 @@ interface CourseSidebarProps {
   ProgressCount: number;
 }
 
-const CourseSidebar = async ({ course, ProgressCount }: CourseSidebarProps) => {
-  const { userId } = auth();
+export const CourseSidebar = async ({
+  course,
+  ProgressCount,
+}: CourseSidebarProps) => {
+  const { userId } = await auth();
 
   if (!userId) {
-    redirect('/');
+    return redirect("/");
   }
 
   const purchase = await db.purchase.findUnique({
@@ -25,31 +31,39 @@ const CourseSidebar = async ({ course, ProgressCount }: CourseSidebarProps) => {
       userId_courseId: {
         userId,
         courseId: course.id,
-      },
-    },
+      }
+    }
   });
 
   return (
-    <div className="h-full border-r flex flex-col overflow-y-auto shadow-sm">
-      <div className="p-8 flex flex-col border-b">
-        <h1 className="font-semibold">{course.title}</h1>
+    <div className="flex flex-col h-full overflow-y-auto border-r shadow-sm">
+      <div className="flex flex-col p-8 border-b">
+        <h1 className="font-semibold">
+          {course.title}
+        </h1>
+        {purchase && (
+          <div className="mt-10">
+            <CourseProgress
+              variant="success"
+              value={ProgressCount}
+            />
+          </div>
+        )}
       </div>
       <div className="flex flex-col w-full">
-        {course.chapters.map((chapter) => {
-          return (
-            <CourseSidebarItem
-              key={chapter.id}
-              id={chapter.id}
-              label={chapter.title}
-              isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
-              courseId={course.id}
-              isLocked={!chapter.isFree && !purchase}
-            />
-          );
-        })}
+        {course.chapters.map((chapter) => (
+          <CourseSidebarItem
+            key={chapter.id}
+            id={chapter.id}
+            label={chapter.title}
+            isCompleted={!!chapter.userProgress?.[0]?.isCompleted}
+            courseId={course.id}
+            isLocked={!chapter.isFree && !purchase}
+          />
+        ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default CourseSidebar;
