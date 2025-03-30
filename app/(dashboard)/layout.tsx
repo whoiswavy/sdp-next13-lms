@@ -2,7 +2,7 @@ import React from 'react';
 import Sidebar from './_components/Sidebar';
 import Navbar from './_components/Navbar';
 
-const DashboadLayout = ({ children }: { children: React.ReactNode }) => {
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="h-full">
       <div className="h-[80px] md:pl-56 w-full fixed inset-y-0 z-50">
@@ -16,4 +16,4 @@ const DashboadLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default DashboadLayout;
+export default DashboardLayout;
