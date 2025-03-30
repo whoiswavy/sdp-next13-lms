@@ -1,5 +1,5 @@
 import { Category, Course } from '@prisma/client';
-import { progress } from './getProgress';
+import { getProgress } from './getProgress';
 import { db } from '@/lib/db';
 
 type CourseWithProgressWithCategory = Course & {
@@ -60,7 +60,7 @@ export const getCourses = async ({
               progress: null,
             };
           }
-          const progressPercentage = await progress(userId, course.id);
+          const progressPercentage = await getProgress(userId, course.id);
           return {
             ...course,
             progress: progressPercentage,
