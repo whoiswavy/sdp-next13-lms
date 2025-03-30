@@ -47,7 +47,7 @@ const ChapterDescriptionForm = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: initialData?.describtion || '',
+      description: initialData?.description || '',
     },
   });
 
@@ -88,12 +88,12 @@ const ChapterDescriptionForm = ({
         <div
           className={cn(
             'text-sm mt-2',
-            !initialData.describtion && 'text-slate-500 italic'
+            !initialData.description && 'text-slate-500 italic'
           )}
         >
-          {!initialData.describtion && 'No description'}
-          {initialData.describtion && (
-            <Preview value={initialData.describtion} />
+          {!initialData.description && 'No description'}
+          {initialData.description && (
+            <Preview value={initialData.description} />
           )}
         </div>
       )}
