@@ -1,28 +1,29 @@
-//import { AttachmentForm } from "@/app/(dashboard)/(routes)/teacher/courses/[courseId]/_components/attachment-form";
 import { db } from "@/lib/db";
 import { Attachment, Chapter } from "@prisma/client";
 
-
-interface getChapterProps {
+interface GetChapterProps {
     userId: string;
     courseId: string;
     chapterId: string;
-};
+}
 
-export const getChapter = async ({ 
-    userId, 
-    courseId, 
-    chapterId 
-}: getChapterProps) => {
+export const getChapter = async ({
+    userId,
+    courseId,
+    chapterId,
+}: GetChapterProps) => {
     try {
-
+        /*
+			The purchase will be an object if the logged in user
+			has purchased the course. Otherwise, it will be null
+		*/
         const purchase = await db.purchase.findUnique({
             where: {
-                userId_courseId: { 
+                userId_courseId: {
                     userId,
                     courseId,
                 },
-            }
+            },
         });
 
         const course = await db.course.findUnique({
@@ -32,7 +33,7 @@ export const getChapter = async ({
             },
             select: {
                 price: true,
-            }
+            },
         });
 
         const chapter = await db.chapter.findUnique({
@@ -44,7 +45,7 @@ export const getChapter = async ({
 
         if (!chapter || !course) {
             throw new Error("Chapter or course not found");
-        } 
+        }
 
         let muxData = null;
         let attachments: Attachment[] = [];
@@ -97,19 +98,16 @@ export const getChapter = async ({
             userProgress,
             purchase,
         };
-
     } catch (error) {
-        console.log(error);
+        console.log("[GET_CHAPTER]", error);
         return {
             chapter: null,
             course: null,
             muxData: null,
-            attachments: null,
+            attachments: [],
             nextChapter: null,
             userProgress: null,
             purchase: null,
-        }
+        };
     }
-}
-
-export default getChapter;
+};
