@@ -98,7 +98,7 @@ const TitleForm = ({ initialData, courseId }: TitleFormProps) => {
                     />
                   </FormControl>
                   <FormDescription>
-                    Write your Course name here. e.g: Adavnced Web Development
+                    Write your Course name here. e.g: Advanced Web Development
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

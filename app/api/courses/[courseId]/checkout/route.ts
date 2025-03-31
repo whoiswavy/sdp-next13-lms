@@ -1,26 +1,18 @@
 import { db } from "@/lib/db";
-import { currentUser } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
+import { currentUser } from "@clerk/nextjs";
+import { NextResponse } from "next/server";
+
+import Stripe from "stripe";
 
 export async function POST(
     req: Request,
     { params }: { params: { courseId: string } }
 ) {
     try {
+        const user = await currentUser();
 
-        // We are creating a customer but we don't know when their payment 
-        // method will be charged. We need to create a customer in Stripe
-        // and then create a session for them to pay for the course.
-
-        // The metadata is used to identify the user and the course they are
-        // purchasing. We will use this information in the webhook to update
-        // the database.
-
-        const user = await currentUser();   
-
-        if (!user || !user.id) {
+        if (!user || !user.id || !user.emailAddresses?.[0]?.emailAddress) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
@@ -41,27 +33,34 @@ export async function POST(
         });
 
         if (purchase) {
-            return new NextResponse("Already Purchased", { status: 400 });
+            return new NextResponse("Already purchased", { status: 400 });
         }
 
         if (!course) {
-            return new NextResponse("Not Found", { status: 404 });
-        }   
+            return new NextResponse("Not found", { status: 404 });
+        }
 
-        // define line items for stripe check out page.
-        const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
             {
+                quantity: 1,
                 price_data: {
-                    currency: "usd",
+                    currency: "USD",
                     product_data: {
                         name: course.title,
+                        description: course.description!,
                     },
                     unit_amount: Math.round(course.price! * 100),
                 },
-                quantity: 1,
             },
         ];
 
+        /*
+			Check if user already has a record in the StripeCustomer
+			table, if not which means it's first time for our user to
+			purchase a course in our platform, create one with his
+			first email address in the stripe and in the StripeCustomer
+			table
+		*/
         let stripeCustomer = await db.stripeCustomer.findUnique({
             where: {
                 userId: user.id,
@@ -73,7 +72,7 @@ export async function POST(
 
         if (!stripeCustomer) {
             const customer = await stripe.customers.create({
-                email: user.emailAddresses?.[0]?.emailAddress,
+                email: user.emailAddresses[0].emailAddress,
             });
 
             stripeCustomer = await db.stripeCustomer.create({
@@ -84,9 +83,13 @@ export async function POST(
             });
         }
 
+        /*
+            The importance of this route and the metadata was 
+            explained in the 9:12:37 part of the video
+        */
         const session = await stripe.checkout.sessions.create({
             customer: stripeCustomer.stripeCustomerId,
-            line_items: lineItems,
+            line_items,
             mode: "payment",
             success_url: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${course.id}?success=1`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/courses/${course.id}?canceled=1`,
@@ -97,9 +100,8 @@ export async function POST(
         });
 
         return NextResponse.json({ url: session.url });
-        
     } catch (error) {
-        console.log("COURSE_ID_CHECKOUT", error);
+        console.log("[COURSE_ID_CHECKOUT]", error);
         return new NextResponse("Internal Error", { status: 500 });
     }
 }
