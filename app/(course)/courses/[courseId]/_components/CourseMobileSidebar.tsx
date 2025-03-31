@@ -32,7 +32,7 @@ export const CourseMobileSidebar = ({
       <SheetContent side="left" className="p-0  w-72">
         <CourseSidebar
           course={course}
-          ProgressCount={progressCount}
+          progressCount={progressCount}
         />
       </SheetContent>
     </Sheet>
